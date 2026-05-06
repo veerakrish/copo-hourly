@@ -5,7 +5,7 @@
 services:
   # ── Express API Backend ──────────────────────────────────
   - type: web
-    name: accreditation-server
+    name: copo-hourly
     runtime: node
     rootDir: server
     buildCommand: npm install
@@ -19,17 +19,17 @@ services:
       - key: MISTRAL_API_KEY
         sync: false          # Paste your key in the Render dashboard
       - key: CLIENT_ORIGIN
-        value: https://accreditation-client.onrender.com
+        value: https://copohrly-client.onrender.com
 
   # ── React Frontend Static Site ───────────────────────────
   - type: static
-    name: accreditation-client
+    name: copo-hourly
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://accreditation-server.onrender.com
+        value: https://copohrly-server.onrender.com
     routes:
       # SPA fallback — all paths serve index.html
       - type: rewrite
