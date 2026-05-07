@@ -3,13 +3,14 @@ import { buildMatricesFromMap } from "../utils/matrixCalc";
 import MatrixTable from "./MatrixTable";
 
 const ALL_POS  = ["PO1","PO2","PO3","PO4","PO5","PO6","PO7","PO8","PO9","PO10","PO11","PO12"];
-const ALL_PSOS = ["PSO1","PSO2","PSO3"];
-const ALL_OUTCOMES = [...ALL_POS, ...ALL_PSOS];
 
 const BLOOMS = ["K1","K2","K3","K4"];
 
-export default function ManualPanel({ unitCount, courseType, onLockUnit, unitsProcessed }) {
+export default function ManualPanel({ unitCount, courseType, dept, onLockUnit, unitsProcessed }) {
   const label = courseType === "lab" ? "Experiment" : "Unit";
+  const psoCount = dept === "AIML" || dept === "CIC" ? 2 : 3;
+  const ALL_PSOS = Array.from({ length: psoCount }, (_, i) => `PSO${i + 1}`);
+  const ALL_OUTCOMES = [...ALL_POS, ...ALL_PSOS];
 
   // Which unit is being edited (1-based)
   const [selectedUnit, setSelectedUnit] = useState(1);
