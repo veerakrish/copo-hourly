@@ -29,8 +29,8 @@ export default function DeptSelector({ onSelect }) {
   return (
     <div className="dept-selector">
       <div className="dept-hero">
-        <h1>Accreditation <em>Architect</em></h1>
-        <p>NBA / NAAC CO-PO Mapping · Bloom's Taxonomy · 3-Matrix Calculator</p>
+        <h1>SRKR CSE <em>COPO</em> Mapping Application</h1>
+        <p>CO-PO Mapping Tool · NBA/NAAC Format · Bloom's Taxonomy</p>
       </div>
 
       <div className="dept-cards">
