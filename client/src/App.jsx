@@ -100,7 +100,7 @@ export default function App() {
 
           {mode === "manual" && (
             <div style={{ paddingTop:24 }}>
-              <ManualPanel
+              <ManualPanel dept={dept}
                 unitCount={unitCount} courseType={courseType}
                 onLockUnit={lockManualUnit}
                 unitsProcessed={units.map(u => u.processed)}
