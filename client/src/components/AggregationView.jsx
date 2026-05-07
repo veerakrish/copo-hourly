@@ -1,9 +1,34 @@
 /**
  * AggregationView
- * Layout: COs as rows, POs/PSOs as columns.
- * Cells are empty (not 0) when not mapped.
- * Last row = average of each column across all COs.
+ * Rows    = CO1, CO2 … (label only, no statement)
+ * Columns = ALL PO1–PO12 + dept PSOs (always shown, empty if not mapped)
+ * Last row = column averages (only over mapped COs for that column)
  */
+
+// All standard columns — always rendered
+const ALL_PO_COLS  = ["PO1","PO2","PO3","PO4","PO5","PO6","PO7","PO8","PO9","PO10","PO11","PO12"];
+// PSO count per dept
+const DEPT_PSO_COUNT = { CSE: 3, AIML: 2, CIC: 2 };
+
+function getPsoCols(dept) {
+  const count = DEPT_PSO_COUNT[dept] || 3;
+  return Array.from({ length: count }, (_, i) => `PSO${i + 1}`);
+}
+
+function strengthStyle(v) {
+  if (!v || v === 0) return {};
+  const n = parseFloat(v);
+  if (n >= 2.5) return { color: "var(--s3)", fontWeight: 700 };
+  if (n >= 1.5) return { color: "var(--s2)", fontWeight: 600 };
+  return { color: "var(--s1)", fontWeight: 500 };
+}
+function strengthBg(v) {
+  if (!v || v === 0) return "transparent";
+  const n = parseFloat(v);
+  if (n >= 2.5) return "rgba(34,197,94,0.08)";
+  if (n >= 1.5) return "rgba(245,158,11,0.08)";
+  return "rgba(239,68,68,0.08)";
+}
 
 export default function AggregationView({ units, unitCount }) {
   const processed = units.filter(u => u.processed && u.result);
@@ -17,74 +42,57 @@ export default function AggregationView({ units, unitCount }) {
     );
   }
 
-  // Collect all PO/PSO columns that appear in any unit
-  const colSet = new Set();
-  for (const u of processed) {
-    for (const k of Object.keys(u.result.unit_matrices?.m3_strength || {})) {
-      colSet.add(k.toUpperCase());
-    }
-  }
+  // Detect dept from first processed unit (fallback CSE)
+  const dept = processed[0]?.result?.unit_meta?.dept || "CSE";
+  const psoCols = getPsoCols(dept);
+  const allCols = [...ALL_PO_COLS, ...psoCols];
 
-  // Sort columns: PO1..PO12 first, then PSO1..PSO3
-  const sortOutcome = k => {
-    if (k.startsWith("PO"))  return parseInt(k.slice(2)) || 99;
-    if (k.startsWith("PSO")) return 100 + parseInt(k.slice(3));
-    return 200;
-  };
-  const cols = [...colSet].sort((a,b) => sortOutcome(a) - sortOutcome(b));
-
-  // Build rows — one per CO (unit)
+  // Build rows — one per CO
   const rows = processed.map((u, i) => {
-    const meta = u.result.unit_meta;
-    const m3   = u.result.unit_matrices?.m3_strength || {};
-    const coId = `CO${meta.unit_id || i+1}`;
-    const stmt = meta.co_statement ? ` — ${meta.co_statement}` : "";
-    return { label: coId, stmt, m3 };
+    const meta  = u.result.unit_meta;
+    const m3    = u.result.unit_matrices?.m3_strength || {};
+    const coId  = `CO${meta.unit_id || i + 1}`;
+    return { label: coId, m3 };
   });
 
-  // Average per column (only over rows where a value exists / is > 0)
+  // Average per column — only over COs that have a non-zero value for that column
   const avgRow = {};
-  for (const col of cols) {
-    const key = col.toLowerCase();
+  for (const col of allCols) {
+    const key  = col.toLowerCase();
     const vals = rows.map(r => r.m3[key]).filter(v => v !== undefined && v > 0);
     avgRow[col] = vals.length > 0
-      ? (vals.reduce((s,v)=>s+v,0) / vals.length).toFixed(2)
+      ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2)
       : "";
   }
 
-  function strengthStyle(v) {
-    if (v === "" || v === undefined || v === 0) return {};
-    const n = typeof v === "string" ? parseFloat(v) : v;
-    if (n >= 2.5) return { color:"var(--s3)", fontWeight:700 };
-    if (n >= 1.5) return { color:"var(--s2)", fontWeight:600 };
-    return { color:"var(--s1)", fontWeight:500 };
-  }
-
-  function strengthBg(v) {
-    if (!v || v === 0) return "transparent";
-    const n = typeof v === "string" ? parseFloat(v) : v;
-    if (n >= 2.5) return "rgba(34,197,94,0.08)";
-    if (n >= 1.5) return "rgba(245,158,11,0.08)";
-    return "rgba(239,68,68,0.08)";
-  }
-
   function exportCSV() {
-    const header = ["CO", ...cols];
+    const header   = ["CO", ...allCols];
     const dataRows = rows.map(r => [
       r.label,
-      ...cols.map(col => {
+      ...allCols.map(col => {
         const v = r.m3[col.toLowerCase()];
         return (v !== undefined && v > 0) ? v : "";
       })
     ]);
-    const avgLine = ["Average", ...cols.map(col => avgRow[col])];
-    const all = [header, ...dataRows, avgLine];
-    const csv = all.map(r => r.join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-    a.download = "SRKR_COPO_Matrix.csv";
+    const avgLine  = ["Average", ...allCols.map(col => avgRow[col])];
+    const csv      = [header, ...dataRows, avgLine].map(r => r.join(",")).join("\n");
+    const a        = document.createElement("a");
+    a.href         = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download     = "SRKR_COPO_Matrix.csv";
     a.click();
   }
+
+  const thBase = {
+    padding: "10px 10px",
+    fontSize: 11, fontWeight: 700,
+    fontFamily: "var(--font-mono)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    borderBottom: "2px solid var(--border-med)",
+    background: "var(--bg-2)",
+    whiteSpace: "nowrap",
+    textAlign: "center"
+  };
 
   return (
     <div>
@@ -98,37 +106,47 @@ export default function AggregationView({ units, unitCount }) {
           <div>
             <div className="panel-title">Final Articulation Matrix</div>
             <div className="panel-sub">
-              Strength: &nbsp;
-              <span style={{color:"var(--s3)",fontWeight:600}}>3</span> (≥70%) &nbsp;·&nbsp;
-              <span style={{color:"var(--s2)",fontWeight:600}}>2</span> (50–69%) &nbsp;·&nbsp;
-              <span style={{color:"var(--s1)",fontWeight:600}}>1</span> (&lt;50%) &nbsp;·&nbsp;
-              <span style={{color:"var(--text-3)"}}>— not mapped</span>
+              Strength:&nbsp;
+              <span style={{ color:"var(--s3)", fontWeight:600 }}>3</span> (≥70%)&nbsp;·&nbsp;
+              <span style={{ color:"var(--s2)", fontWeight:600 }}>2</span> (50–69%)&nbsp;·&nbsp;
+              <span style={{ color:"var(--s1)", fontWeight:600 }}>1</span> (&lt;50%)&nbsp;·&nbsp;
+              <span style={{ color:"var(--text-3)" }}>— not mapped</span>
             </div>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={exportCSV}>↓ Export CSV</button>
         </div>
 
-        <div className="panel-body" style={{ padding:0, overflowX:"auto" }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13, minWidth: 480 }}>
+        <div className="panel-body" style={{ padding: 0, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
+              {/* Group header: POs | PSOs */}
               <tr>
-                <th style={{
-                  padding:"10px 16px", textAlign:"left",
-                  fontSize:11, fontWeight:600, color:"var(--text-2)",
-                  textTransform:"uppercase", letterSpacing:"0.05em",
-                  borderBottom:"2px solid var(--border-med)",
-                  background:"var(--bg-2)", position:"sticky", left:0, zIndex:2
-                }}>
-                  Course Outcome
+                <th style={{ ...thBase, textAlign:"left", position:"sticky", left:0, zIndex:3, borderRight:"1px solid var(--border-med)" }} rowSpan={2}>
+                  CO
                 </th>
-                {cols.map(col => (
+                <th style={{ ...thBase, color:"var(--accent-teal)", borderLeft:"1px solid var(--border-med)" }} colSpan={12}>
+                  Program Outcomes
+                </th>
+                <th style={{ ...thBase, color:"var(--accent-purple)", borderLeft:"1px solid var(--border-med)" }} colSpan={psoCols.length}>
+                  PSOs
+                </th>
+              </tr>
+              {/* Individual column headers */}
+              <tr>
+                {ALL_PO_COLS.map((col, i) => (
                   <th key={col} style={{
-                    padding:"10px 12px", textAlign:"center",
-                    fontSize:11, fontWeight:700, color:"var(--accent-teal)",
-                    fontFamily:"var(--font-mono)",
-                    textTransform:"uppercase", letterSpacing:"0.04em",
-                    borderBottom:"2px solid var(--border-med)",
-                    background:"var(--bg-2)", whiteSpace:"nowrap"
+                    ...thBase,
+                    color: "var(--accent-teal)",
+                    borderLeft: i === 0 ? "1px solid var(--border-med)" : undefined
+                  }}>
+                    {col}
+                  </th>
+                ))}
+                {psoCols.map((col, i) => (
+                  <th key={col} style={{
+                    ...thBase,
+                    color: "var(--accent-purple)",
+                    borderLeft: i === 0 ? "1px solid var(--border-med)" : undefined
                   }}>
                     {col}
                   </th>
@@ -136,33 +154,48 @@ export default function AggregationView({ units, unitCount }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
-                <tr key={i} style={{ borderBottom:"1px solid var(--border)" }}>
+              {rows.map((row, ri) => (
+                <tr key={ri} style={{ borderBottom: "1px solid var(--border)" }}>
+                  {/* CO label */}
                   <td style={{
-                    padding:"11px 16px",
-                    background:"var(--bg-card)",
-                    position:"sticky", left:0, zIndex:1,
-                    borderRight:"1px solid var(--border)"
+                    padding: "10px 16px",
+                    fontFamily: "var(--font-mono)", fontWeight: 700,
+                    color: "var(--accent-teal)",
+                    background: "var(--bg-card)",
+                    position: "sticky", left: 0, zIndex: 1,
+                    borderRight: "1px solid var(--border)"
                   }}>
-                    <span style={{ fontFamily:"var(--font-mono)", fontWeight:700, color:"var(--accent-teal)", marginRight:8 }}>
-                      {row.label}
-                    </span>
-                    {row.stmt && (
-                      <span style={{ fontSize:12, color:"var(--text-2)" }}>{row.stmt}</span>
-                    )}
+                    {row.label}
                   </td>
-                  {cols.map(col => {
-                    const v = row.m3[col.toLowerCase()];
+                  {/* PO cells */}
+                  {ALL_PO_COLS.map((col, i) => {
+                    const v    = row.m3[col.toLowerCase()];
                     const show = v !== undefined && v > 0;
                     return (
                       <td key={col} style={{
-                        padding:"10px 12px", textAlign:"center",
-                        fontFamily:"var(--font-mono)", fontWeight: show ? 700 : 400,
-                        fontSize:14,
+                        padding: "10px 8px", textAlign: "center",
+                        fontFamily: "var(--font-mono)", fontSize: 14,
+                        borderLeft: i === 0 ? "1px solid var(--border-med)" : undefined,
                         background: show ? strengthBg(v) : "transparent",
-                        ...strengthStyle(v)
+                        ...strengthStyle(show ? v : null)
                       }}>
-                        {show ? v : <span style={{ color:"var(--bg-3)" }}>—</span>}
+                        {show ? v : <span style={{ color:"var(--bg-3)", fontSize:12 }}>—</span>}
+                      </td>
+                    );
+                  })}
+                  {/* PSO cells */}
+                  {psoCols.map((col, i) => {
+                    const v    = row.m3[col.toLowerCase()];
+                    const show = v !== undefined && v > 0;
+                    return (
+                      <td key={col} style={{
+                        padding: "10px 8px", textAlign: "center",
+                        fontFamily: "var(--font-mono)", fontSize: 14,
+                        borderLeft: i === 0 ? "1px solid var(--border-med)" : undefined,
+                        background: show ? strengthBg(v) : "transparent",
+                        ...strengthStyle(show ? v : null)
+                      }}>
+                        {show ? v : <span style={{ color:"var(--bg-3)", fontSize:12 }}>—</span>}
                       </td>
                     );
                   })}
@@ -170,28 +203,41 @@ export default function AggregationView({ units, unitCount }) {
               ))}
 
               {/* Average row */}
-              <tr style={{ borderTop:"2px solid var(--border-med)", background:"var(--bg-2)" }}>
+              <tr style={{ borderTop: "2px solid var(--border-med)", background: "var(--bg-2)" }}>
                 <td style={{
-                  padding:"11px 16px",
-                  fontWeight:700, fontSize:12,
-                  color:"var(--accent-gold)",
-                  fontFamily:"var(--font-mono)",
-                  textTransform:"uppercase",
-                  letterSpacing:"0.05em",
-                  background:"var(--bg-2)",
-                  position:"sticky", left:0, zIndex:1,
-                  borderRight:"1px solid var(--border)"
+                  padding: "11px 16px",
+                  fontFamily: "var(--font-mono)", fontWeight: 700,
+                  fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em",
+                  color: "var(--accent-gold)",
+                  background: "var(--bg-2)",
+                  position: "sticky", left: 0, zIndex: 1,
+                  borderRight: "1px solid var(--border)"
                 }}>
                   Average
                 </td>
-                {cols.map(col => {
-                  const v = avgRow[col];
-                  const show = v !== "" && v !== undefined;
+                {ALL_PO_COLS.map((col, i) => {
+                  const v    = avgRow[col];
+                  const show = v !== "";
                   return (
                     <td key={col} style={{
-                      padding:"10px 12px", textAlign:"center",
-                      fontFamily:"var(--font-mono)", fontWeight:700,
-                      fontSize:13,
+                      padding: "10px 8px", textAlign: "center",
+                      fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13,
+                      borderLeft: i === 0 ? "1px solid var(--border-med)" : undefined,
+                      color: show ? "var(--accent-gold)" : "transparent",
+                      background: show ? "rgba(244,165,53,0.08)" : "transparent"
+                    }}>
+                      {show ? v : "—"}
+                    </td>
+                  );
+                })}
+                {psoCols.map((col, i) => {
+                  const v    = avgRow[col];
+                  const show = v !== "";
+                  return (
+                    <td key={col} style={{
+                      padding: "10px 8px", textAlign: "center",
+                      fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13,
+                      borderLeft: i === 0 ? "1px solid var(--border-med)" : undefined,
                       color: show ? "var(--accent-gold)" : "transparent",
                       background: show ? "rgba(244,165,53,0.08)" : "transparent"
                     }}>
@@ -205,9 +251,8 @@ export default function AggregationView({ units, unitCount }) {
         </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ marginTop:16, fontSize:12, color:"var(--text-3)", textAlign:"center" }}>
-        Values represent M3 Articulation Strength · Empty cells indicate outcome not mapped for that CO
+      <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-3)", textAlign: "center" }}>
+        Empty cells indicate the CO does not map to that outcome · Average computed only over mapped COs per column
       </div>
     </div>
   );
