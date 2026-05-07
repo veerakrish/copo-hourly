@@ -68,7 +68,7 @@ ${psoBlock}
   "validation": "Confirmed: Hours sum to 10 and Bloom's levels ≤ ${coLevel}."
 }
 
-Include ONLY POs and PSOs that are actually mapped (non-zero). Use lowercase keys in matrices (po1, po2, pso1, pso2, pso3).`;
+Include ONLY POs and PSOs that are actually mapped (non-zero). Use lowercase keys in matrices (po1, po2, ..., po12, pso1, pso2). Note: this department has only PSO1 and PSO2 — do not invent PSO3.`;
 
   const userPrompt = `Generate the lesson plan for the following unit:
 
