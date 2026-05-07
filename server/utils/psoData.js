@@ -2,18 +2,18 @@
    Program Outcomes (PO1–PO12) — common to all depts
    ───────────────────────────────────────────────── */
 const PROGRAM_OUTCOMES = {
-  PO1:  "Engineering Knowledge: Apply mathematics, science, and engineering fundamentals.",
-  PO2:  "Problem Analysis: Identify and formulate complex engineering problems.",
-  PO3:  "Design/Development of Solutions: Design solutions meeting specified needs.",
-  PO4:  "Conduct Investigations: Use research-based knowledge to investigate problems.",
-  PO5:  "Modern Tool Usage: Apply appropriate techniques and modern engineering tools.",
-  PO6:  "Engineer and Society: Apply reasoning for societal and safety implications.",
-  PO7:  "Environment and Sustainability: Understand the impact of engineering solutions.",
-  PO8:  "Ethics: Apply ethical principles and professional responsibilities.",
-  PO9:  "Individual and Team Work: Function effectively in individual or team settings.",
-  PO10: "Communication: Communicate effectively on complex engineering activities.",
-  PO11: "Project Management: Apply management principles to engineering projects.",
-  PO12: "Life-long Learning: Engage in independent and life-long learning."
+  PO1:  "Engineering Knowledge: Apply the knowledge of mathematics, science, engineering fundamentals, and an engineering specialization to the solution of complex engineering problems.",
+  PO2:  "Problem Analysis: Identify, formulate, review research literature, and analyze complex engineering problems reaching substantiated conclusions using first principles of mathematics, natural sciences, and engineering sciences.",
+  PO3:  "Design/Development of Solutions: Design solutions for complex engineering problems and design system components or processes that meet the specified needs with appropriate consideration for the public health and safety, and the cultural, societal, and environmental considerations.",
+  PO4:  "Conduct Investigations: Use research-based knowledge and research methods including design of experiments, analysis and interpretation of data, and synthesis of the information to provide valid conclusions.",
+  PO5:  "Modern Tool Usage: Create, select, and apply appropriate techniques, resources, and modern engineering and IT tools including prediction and modeling to complex engineering activities with an understanding of the limitations.",
+  PO6:  "Engineer and Society: Apply reasoning informed by the contextual knowledge to assess societal, health, safety, legal and cultural issues and the consequent responsibilities relevant to the professional engineering practice.",
+  PO7:  "Environment and Sustainability: Understand the impact of the professional engineering solutions in societal and environmental contexts, and demonstrate the knowledge of, and need for sustainable development.",
+  PO8:  "Ethics: Apply ethical principles and commit to professional ethics and responsibilities and norms of the engineering practice.",
+  PO9:  "Individual and Team Work: Function effectively as an individual, and as a member or leader in diverse teams, and in multidisciplinary settings.",
+  PO10: "Communication: Communicate effectively on complex engineering activities with the engineering community and with society at large, such as, being able to comprehend and write effective reports and design documentation, make effective presentations, and give and receive clear instructions.",
+  PO11: "Project Management: Demonstrate knowledge and understanding of the engineering and management principles and apply these to one's own work, as a member and leader in a team, to manage projects and in multidisciplinary environments.",
+  PO12: "Life-long Learning: Recognize the need for, and have the preparation and ability to engage in independent and lifelong learning in the broadest context of technological change."
 };
 
 /* ─────────────────────────────────────────────────
@@ -21,19 +21,17 @@ const PROGRAM_OUTCOMES = {
    ───────────────────────────────────────────────── */
 const DEPT_PSO = {
   CSE: {
-    PSO1: "Apply software engineering principles to design and develop scalable, reliable software systems.",
-    PSO2: "Implement efficient data structures and algorithms to solve complex computational problems.",
-    PSO3: "Develop system-level solutions and applications using modern frameworks and development tools."
+    PSO1: "Ability to apply in depth problem solving and programming skills.",
+    PSO2: "Ability to do collaborative development of software solutions for Trans-disciplinary engineering problems.",
+    PSO3: "Ability to design an integrate hardware and software components for the advancement of technology."
   },
   AIML: {
-    PSO1: "Apply machine learning algorithms and deep learning frameworks to solve real-world intelligent systems problems.",
-    PSO2: "Build data intelligence solutions using advanced analytics, statistical modeling, and visualization.",
-    PSO3: "Design and deploy automated systems and AI pipelines for intelligent decision making."
+    PSO1: "Ability to apply in-depth problem-solving and programming skills.",
+    PSO2: "Ability to design, develop, and deploy AI and ML models to solve real-world problems."
   },
   CIC: {
-    PSO1: "Implement cybersecurity protocols and techniques to design secure network infrastructures.",
-    PSO2: "Design IoT-based embedded systems and smart solutions for connected environments.",
-    PSO3: "Manage, optimize, and scale digital infrastructure including cloud, edge, and enterprise systems."
+    PSO1: "Ability to apply various tools related to IoT applications, Cyber Security solutions including Blockchain Technology.",
+    PSO2: "Ability to design and develop various applications using IoT and Cyber Security to provide solutions to real world problems."
   }
 };
 
