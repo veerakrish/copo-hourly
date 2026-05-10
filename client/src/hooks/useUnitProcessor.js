@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const COOLDOWN_MS = 7000;
@@ -11,17 +11,21 @@ export function useUnitProcessor(dept, unitCount = 5) {
     processed:false, processing:false, result:null, error:null
   });
 
-  const [units, setUnits] = useState(Array.from({ length: unitCount }, makeUnit));
+  // Initialize with the correct unitCount from the start
+  const [units, setUnits] = useState(() =>
+    Array.from({ length: unitCount }, makeUnit)
+  );
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const cooldownTimer = useRef(null);
 
-  // Re-init units if unitCount changes
-  const lastCount = useRef(unitCount);
-  if (lastCount.current !== unitCount) {
-    lastCount.current = unitCount;
-    // Will be handled via reset from parent
-  }
+  // ── KEY FIX: Re-initialize units whenever unitCount changes ──
+  useEffect(() => {
+    clearInterval(cooldownTimer.current);
+    setUnits(Array.from({ length: unitCount }, makeUnit));
+    setCooldownActive(false);
+    setCooldownSeconds(0);
+  }, [unitCount]);
 
   const updateUnit = useCallback((idx, patch) => {
     setUnits(prev => prev.map((u, i) => i === idx ? { ...u, ...patch } : u));
@@ -35,7 +39,11 @@ export function useUnitProcessor(dept, unitCount = 5) {
     cooldownTimer.current = setInterval(() => {
       rem -= 1;
       setCooldownSeconds(rem);
-      if (rem <= 0) { clearInterval(cooldownTimer.current); setCooldownActive(false); setCooldownSeconds(0); }
+      if (rem <= 0) {
+        clearInterval(cooldownTimer.current);
+        setCooldownActive(false);
+        setCooldownSeconds(0);
+      }
     }, 1000);
   }
 
@@ -47,14 +55,22 @@ export function useUnitProcessor(dept, unitCount = 5) {
       const res = await fetch(`${API_BASE}/api/process-unit`, {
         method:"POST",
         headers:{ "Content-Type":"application/json", "x-session-id": sessionId.current },
-        body: JSON.stringify({ dept, unitId:idx+1, coStatement:unit.coStatement, coLevel:unit.coLevel, syllabus:unit.syllabus })
+        body: JSON.stringify({
+          dept, unitId:idx+1,
+          coStatement: unit.coStatement,
+          coLevel:     unit.coLevel,
+          syllabus:    unit.syllabus
+        })
       });
       const json = await res.json();
-      if (!res.ok) { updateUnit(idx, { processing:false, error: json.error || "API error" }); return; }
+      if (!res.ok) {
+        updateUnit(idx, { processing:false, error: json.error || "API error" });
+        return;
+      }
       updateUnit(idx, { processing:false, processed:true, result:json.data, error:null });
       startCooldown();
     } catch(err) {
-      updateUnit(idx, { processing:false, error:err.message });
+      updateUnit(idx, { processing:false, error: err.message });
     }
   }, [units, dept, updateUnit]);
 
@@ -65,10 +81,16 @@ export function useUnitProcessor(dept, unitCount = 5) {
   const reset = useCallback(() => {
     clearInterval(cooldownTimer.current);
     setUnits(Array.from({ length: unitCount }, makeUnit));
-    setCooldownActive(false); setCooldownSeconds(0);
+    setCooldownActive(false);
+    setCooldownSeconds(0);
   }, [unitCount]);
 
   const allProcessed = units.length === unitCount && units.every(u => u.processed);
 
-  return { units, updateUnit, processUnit, lockManualUnit, cooldownActive, cooldownSeconds, allProcessed, reset };
+  return {
+    units, updateUnit,
+    processUnit, lockManualUnit,
+    cooldownActive, cooldownSeconds,
+    allProcessed, reset
+  };
 }
